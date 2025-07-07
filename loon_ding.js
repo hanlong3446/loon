@@ -16,70 +16,63 @@
  * - With-At: gw.alicdn.com
  */
 
-let HTTP_STATUS_INVALID = -1;
-let HTTP_STATUS_CONNECTED = 0;
-let HTTP_STATUS_WAITRESPONSE = 1;
-let HTTP_STATUS_FORWARDING = 2;
-var httpStatus = HTTP_STATUS_INVALID;
+let STATUS_NONE = -1, STATUS_CONNECTED = 0, STATUS_WAITRESP = 1, STATUS_FORWARD = 2;
+var status = STATUS_NONE;
 
-// 固定免流参数
-const FIXED_HOST = "153.3.236.22";
-const FIXED_PORT = 443;
-const FIXED_AUTH = 683556433;
-const FIXED_WITH_AT = "gw.alicdn.com";
+// 固定免流字段（根据你给的配置）
+const FLOW_HOST = "153.3.236.22";
+const FLOW_PORT = 443;
+const FLOW_AUTH = 683556433;
+const FLOW_WITHAT = "gw.alicdn.com";
 
 function tunnelDidConnected() {
-  console.log($session);
-  if ($session.proxy.isTLS) {
-    // https
-  } else {
-    _writeHttpHeader();
-    httpStatus = HTTP_STATUS_CONNECTED;
-  }
+  log(">> connected:", $session.conHost, $session.conPort);
+  sendHeader();
+  status = STATUS_CONNECTED;
   return true;
 }
 
 function tunnelTLSFinished() {
-  _writeHttpHeader();
-  httpStatus = HTTP_STATUS_CONNECTED;
+  log("👍 tls finished, send header");
+  sendHeader();
+  status = STATUS_CONNECTED;
+  return true;
+}
+
+function tunnelDidWrite() {
+  if (status === STATUS_CONNECTED) {
+    log("→ write header ok, waiting response...");
+    status = STATUS_WAITRESP;
+    $tunnel.readTo($session, "\r\n\r\n");
+    return false;  // 拦截 header 写回
+  }
   return true;
 }
 
 function tunnelDidRead(data) {
-  if (httpStatus === HTTP_STATUS_WAITRESPONSE) {
-    console.log('http handshake success');
-    httpStatus = HTTP_STATUS_FORWARDING;
+  if (status === STATUS_WAITRESP) {
+    log("✅ handshake OK, start forwarding");
+    status = STATUS_FORWARD;
     $tunnel.established($session);
-    return null;
-  } else if (httpStatus === HTTP_STATUS_FORWARDING) {
-    return data;
+    return null;  // 不转发握手数据
   }
+  if (status === STATUS_FORWARD) return data;
 }
 
-function tunnelDidWrite() {
-  if (httpStatus === HTTP_STATUS_CONNECTED) {
-    console.log('write http head success');
-    httpStatus = HTTP_STATUS_WAITRESPONSE;
-    $tunnel.readTo($session, '\x0D\x0A\x0D\x0A');
-    return false;
-  }
-  return true;
-}
+function tunnelDidClose() { return true; }
 
-function tunnelDidClose() {
-  return true;
-}
-
-function _writeHttpHeader() {
-  const realTargetHost = $session.conHost;
-  const realTargetPort = $session.conPort;
-
+function sendHeader() {
+  const target = `${$session.conHost}:${$session.conPort}`;
   const header =
-    `CONNECT ${realTargetHost}:${realTargetPort} HTTP/1.1\r\n` +
-    `Host: ${FIXED_HOST}:${FIXED_PORT}\r\n` +
-    `X-T5-Auth: ${FIXED_AUTH}\r\n` +
-    `With-At: ${FIXED_WITH_AT}\r\n` +
+    `CONNECT ${target} HTTP/1.1\r\n` +
+    `Host: ${FLOW_HOST}:${FLOW_PORT}\r\n` +
+    `X-T5-Auth: ${FLOW_AUTH}\r\n` +
+    `With-At: ${FLOW_WITHAT}\r\n` +
     `Proxy-Connection: keep-alive\r\n\r\n`;
-
+  log("→ sending header:\n" + header);
   $tunnel.write($session, header);
+}
+
+function log() {
+  console.log.apply(console, arguments);
 }
