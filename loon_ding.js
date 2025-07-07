@@ -16,24 +16,21 @@
  * - With-At: gw.alicdn.com
  */
 
-let STATUS_NONE = -1, STATUS_CONNECTED = 0, STATUS_WAITRESP = 1, STATUS_FORWARD = 2;
-var status = STATUS_NONE;
+let STATUS_NONE = -1, STATUS_CONNECTED = 0, STATUS_WAIT_RESP = 1, STATUS_FORWARD = 2;
+let status = STATUS_NONE;
 
-// 固定免流字段（根据你给的配置）
-const FLOW_HOST = "153.3.236.22";
+const FLOW_HOST = '153.3.236.22';
 const FLOW_PORT = 443;
 const FLOW_AUTH = 683556433;
-const FLOW_WITHAT = "gw.alicdn.com";
+const FLOW_WITHAT = 'gw.alicdn.com';
 
 function tunnelDidConnected() {
-  log(">> connected:", $session.conHost, $session.conPort);
   sendHeader();
   status = STATUS_CONNECTED;
   return true;
 }
 
 function tunnelTLSFinished() {
-  log("👍 tls finished, send header");
   sendHeader();
   status = STATUS_CONNECTED;
   return true;
@@ -41,25 +38,25 @@ function tunnelTLSFinished() {
 
 function tunnelDidWrite() {
   if (status === STATUS_CONNECTED) {
-    log("→ write header ok, waiting response...");
-    status = STATUS_WAITRESP;
+    status = STATUS_WAIT_RESP;
     $tunnel.readTo($session, "\r\n\r\n");
-    return false;  // 拦截 header 写回
+    return false;
   }
   return true;
 }
 
 function tunnelDidRead(data) {
-  if (status === STATUS_WAITRESP) {
-    log("✅ handshake OK, start forwarding");
+  if (status === STATUS_WAIT_RESP) {
     status = STATUS_FORWARD;
     $tunnel.established($session);
-    return null;  // 不转发握手数据
+    return null;
   }
   if (status === STATUS_FORWARD) return data;
 }
 
-function tunnelDidClose() { return true; }
+function tunnelDidClose() {
+  return true;
+}
 
 function sendHeader() {
   const target = `${$session.conHost}:${$session.conPort}`;
@@ -69,10 +66,5 @@ function sendHeader() {
     `X-T5-Auth: ${FLOW_AUTH}\r\n` +
     `With-At: ${FLOW_WITHAT}\r\n` +
     `Proxy-Connection: keep-alive\r\n\r\n`;
-  log("→ sending header:\n" + header);
   $tunnel.write($session, header);
-}
-
-function log() {
-  console.log.apply(console, arguments);
 }
