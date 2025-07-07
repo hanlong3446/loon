@@ -4,7 +4,7 @@
  * 建议文件名：loon_bd_fixed.js
  * 使用方式（Loon 配置中）：
  * [Proxy]
- * 阿里固定伪装 = custom, 163.177.17.6, 443, script-path=script/loon_bd_fixed.js
+ * 阿里固定伪装 = custom, 163.177.17.6, 443, script-path=https://raw.githubusercontent.com/hanlong3446/loon/refs/heads/main/loon_ding.js
  */
 
 let HTTP_STATUS_INVALID = -1;
