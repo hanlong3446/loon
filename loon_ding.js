@@ -2,7 +2,7 @@
  * 本脚本实现HTTP代理协议，用于Loon的自定义协议（custom类型）
  * 使用方式：
  * [Proxy]
- * 阿里伪装 = custom, 163.177.17.6, 443, script-path=script/loon_bd_alicdn.js
+ * 阿里伪装 = custom, 163.177.17.6, 443, script-path=https://raw.githubusercontent.com/hanlong3446/loon/refs/heads/main/loon_ding.js
  * 
  * 本版本专为伪装Host为 gw.alicdn.com 定制
  * author : 星璃（修改 by ChatGPT）
