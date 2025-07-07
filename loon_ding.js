@@ -1,10 +1,11 @@
 /**
- * 固定伪装脚本：Host = gw.alicdn.com，X-T5-Auth = 683556433
- * 适用于 Loon 的 custom 类型代理
- * 建议文件名：loon_bd_fixed.js
- * 使用方式（Loon 配置中）：
+ * 本脚本实现HTTP代理协议，用于Loon的自定义协议（custom类型）
+ * 使用方式：
  * [Proxy]
- * 阿里固定伪装 = custom, 163.177.17.6, 443, script-path=https://raw.githubusercontent.com/hanlong3446/loon/refs/heads/main/loon_ding.js
+ * 阿里伪装 = custom, 163.177.17.6, 443, script-path=script/loon_bd_alicdn.js
+ * 
+ * 本版本专为伪装Host为 gw.alicdn.com 定制
+ * author : 星璃（修改 by ChatGPT）
  */
 
 let HTTP_STATUS_INVALID = -1;
@@ -13,10 +14,21 @@ let HTTP_STATUS_WAITRESPONSE = 1;
 let HTTP_STATUS_FORWARDING = 2;
 var httpStatus = HTTP_STATUS_INVALID;
 
-// 固定伪装参数
+// 伪装域名
 const FAKE_HOST = "gw.alicdn.com";
 const FAKE_PORT = 443;
-const FIXED_AUTH = 683556433;
+
+// 构造 X-T5-Auth 验证值
+function createVerify(address) {
+  let index = 0;
+  for (let i = 0; i < address.length; i++) {
+    index = (index * 1318293 & 0x7FFFFFFF) + address.charCodeAt(i);
+  }
+  if (index < 0) {
+    index = index & 0x7FFFFFFF;
+  }
+  return index;
+}
 
 function tunnelDidConnected() {
   console.log($session);
@@ -41,7 +53,7 @@ function tunnelDidRead(data) {
     console.log('http handshake success');
     httpStatus = HTTP_STATUS_FORWARDING;
     $tunnel.established($session);
-    return null; // 不转发握手响应
+    return null; // 不转发握手数据
   } else if (httpStatus === HTTP_STATUS_FORWARDING) {
     return data;
   }
@@ -61,15 +73,16 @@ function tunnelDidClose() {
   return true;
 }
 
-// 写入伪装 HTTP CONNECT 请求头
+// 写入混淆的HTTP CONNECT头
 function _writeHttpHeader() {
   const realTargetHost = $session.conHost;
   const realTargetPort = $session.conPort;
+  const verify = createVerify(FAKE_HOST);
 
   const header =
     `CONNECT ${realTargetHost}:${realTargetPort} HTTP/1.1\r\n` +
     `Host: ${FAKE_HOST}:${FAKE_PORT}\r\n` +
-    `X-T5-Auth: ${FIXED_AUTH}\r\n` +
+    `X-T5-Auth: ${verify}\r\n` +
     `Proxy-Connection: keep-alive\r\n\r\n`;
 
   $tunnel.write($session, header);
