@@ -13,7 +13,7 @@
  * 固定伪装：
  * - Host: 153.3.236.22:443
  * - X-T5-Auth: 683556433
- * - With-At: gw.alicdn.com
+ * - With-At: tms.dingtalk.com
  */
 
 let STATUS_NONE = -1, STATUS_CONNECTED = 0, STATUS_WAIT_RESP = 1, STATUS_FORWARD = 2;
