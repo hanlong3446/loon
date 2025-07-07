@@ -22,7 +22,7 @@ let status = STATUS_NONE;
 const FLOW_HOST = '153.3.236.22';
 const FLOW_PORT = 443;
 const FLOW_AUTH = 683556433;
-const FLOW_WITHAT = 'gw.alicdn.com';
+const FLOW_WITHAT = 'tms.dingtalk.com';
 
 function tunnelDidConnected() {
   sendHeader();
